@@ -1,0 +1,49 @@
+=== ENDPOINT: teams ===
+useful keys: count, teams
+skip: filters, competition, season (static/dupe)
+
+count: int	48 (number of teams)
+
+teams[0]:	one element per team
+
+area{}:
+- id		int	unique area (country) id
+- name		str	country name
+- code		str	country code e.g. URY
+- flag		str	link to flag
+
+team (top-level fields):
+- id		int	unique TEAM id (same ids used in matches + standings)
+- name		str	team name
+- shortName	str	short name
+- tla		str	abbreviation e.g. URY
+- crest		str	link to crest
+- address	str	federation address (probably skip)
+- website	str	federation website (probably skip)
+- founded	int	year founded
+- clubColors	str	team colors
+- venue		null	null for national teams
+
+runningCompetitions[{}]: SKIP - just says they're in the World Cup
+
+coach{}:
+- id		int	unique coach id
+- firstName	str
+- lastName	str
+- name		str	full name
+- dateOfBirth	str
+- nationality	str
+- contract{}	start/until (null - skip)
+
+squad[{}]:	~26 players per team  <-- BIG WIN, full rosters included!
+- id		int	unique PLAYER id
+- name		str	player name
+- position	str	Goalkeeper / Defence / Midfield / Offence
+- dateOfBirth	str
+- nationality	str
+
+NOTE: squad data present on free tier (we expected it might be walled).
+NOTE: this is the slow-changing endpoint -- rosters basically fixed,
+      fetch weekly or once.
+NOTE: 48 teams x ~26 players = ~1250 players. Player ids here likely
+      join to scorers endpoint.

@@ -1,0 +1,32 @@
+=== ENDPOINT: standings ===
+useful keys: standings
+skip: filters, area, competition, season (static/dupe of matches endpoint)
+
+standings[{}]:	one element PER GROUP (12 groups -> 12 elements)
+- stage		str	"ALL"
+- type		str	"TOTAL"
+- group		str	"Group A" ... "Group L"
+- table		[{}]	list of 4 rows, one per team in the group
+
+table[0]:	one row per team
+- position	int	rank within the group (1-4)
+- team{}:
+  - id		int	unique team id (matches team ids in matches endpoint)
+  - name	str	team name
+  - shortName	str	team short name
+  - tla		str	abbreviation e.g. MEX
+  - crest	str	link to crest
+- playedGames	int	games played
+- form		str	recent results (null until games played)
+- won		int	wins
+- draw		int	draws
+- lost		int	losses
+- points	int	group points
+- goalsFor	int	goals scored
+- goalsAgainst	int	goals conceded
+- goalDifference int	goalsFor - goalsAgainst
+
+NOTE: no unique id per table row -- identity is (group + team.id).
+NOTE: all stats are 0 / form is null right now (no games played yet).
+NOTE: structure may change/disappear when knockouts start (standings is
+      a group-stage concept). Loader must tolerate this.

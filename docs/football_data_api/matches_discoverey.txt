@@ -1,0 +1,69 @@
+=== ENDPOINT: matches ===
+useful keys: resultSet, matches
+skip: filters, competition (static/dupe)
+
+resultSet{}:
+- count		int	number of games in tournament
+- first		str	first game of tournament date
+- last		str	last game of tournament date
+- played	int	number of games played	
+
+
+
+matches[0]:                       
+
+area{}:
+- id		int	unique area id
+- name		str	"World" 
+- code		str	"INT"
+- flag		null	null
+
+competition{}:
+- id		int 	unique competition id
+- name		str	"FIFA World Cup"
+- code		str	"WC"
+- type 		str 	"CUP"
+- emblem	str	link to crest
+
+season{}:
+- id:		int	unique season id
+- startDate	str	first game of tournament date
+- endDate	str	last game of tournament date
+- currentMatchday int	matchday number
+- winner	str	TOURNAMENT winner (null until final)
+
+match (top-level fields):
+- id		int	unique MATCH id (primary key, e.g. 537327)
+- utcDate	str	datetime of match
+- status	str	"TIMED"=scheduled, changes to IN_PLAY -> FINISHED
+- matchday	int	matchday number
+- stage		str	group stage or knock out round
+- group		str	groups A-L
+- lastUpdated	str	datetime of the last update
+
+hometeam{}:
+- id: 		int 	home team's unique id
+- name: 	str	home team's name
+- shortName	str	home team's short name
+- tla		str	abbreviation e.g. Mexico -> MEX
+- crest		str	link to crest
+
+awayteam{}:
+- id: 		int 	away team's unique id
+- name: 	str	away team's name
+- shortName	str	away team's short name
+- tla		str	abbreviation e.g. Mexico -> MEX
+- crest		str	link to crest	
+
+score{}:
+- winner	str	winner of MATCH (null until played)
+- duration	str	regular time or presumably extra time in knockout rounds
+- fullTime	obj	home, away (null until played)
+- halfTime	obj	home, away (null until played)
+
+odds{}: SKIP - just a paywall message, no data
+referees[{}]:
+- id		int	unique id for referee
+- name		str	referee's name
+- type		str	type of referee
+- nationality	str	referee's nationality

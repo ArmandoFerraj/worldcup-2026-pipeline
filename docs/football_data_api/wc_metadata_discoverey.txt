@@ -1,0 +1,30 @@
+=== ENDPOINT: competition (base /WC) ===
+useful keys: id, name, code, currentSeason, seasons
+skip: area, emblem, lastUpdated
+
+competition (top-level fields):
+- id		int	2000, unique competition id
+- name		str	"FIFA World Cup"
+- code		str	"WC"
+- type		str	"CUP"
+- emblem	str	link to crest
+
+currentSeason{}:
+- id		int	2398 <- the 2026 SEASON id (other endpoints reference it)
+- startDate	str	2026-06-11
+- endDate	str	2026-07-19
+- currentMatchday int
+- winner	null	null until tournament ends
+
+seasons[{}]:	one element per historical World Cup (1930-2026, 22 entries)
+- id		int	unique season id
+- startDate	str
+- endDate	str
+- currentMatchday int/null
+- winner{}	full team object of the champion (null for 2026)
+  - id, name, shortName, tla, crest + federation junk (address, website...)
+
+NOTE: fetch ONCE -- static metadata, not in the daily pipeline.
+NOTE: surprise bonus -- full World Cup history with winners back to 1930.
+      Could seed a historical "past champions" dimension for the dashboard.
+NOTE: currentSeason.id (2398) is the season key everything else hangs off.

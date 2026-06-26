@@ -1,1 +1,18 @@
 .env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# dbt
+wc_dbt/target/
+wc_dbt/dbt_packages/
+wc_dbt/logs/
+logs/
+
+# Data
+data/
+
+# OS junk
+.DS_Store

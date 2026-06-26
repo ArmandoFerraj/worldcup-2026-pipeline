@@ -1,0 +1,13 @@
+=== ENDPOINT: scorers ===
+useful keys: count, scorers
+skip: filters, competition, season (static/dupe)
+
+count: int	0 (no goals scored yet)
+
+scorers: []	EMPTY -- tournament hasn't started
+
+NOTE: structure unknown until first goals. Per docs, each element will
+      have: player info (id, name), team, goals, assists, penalties.
+      Re-fetch after first match day (June 11+) and document then.
+NOTE: filters show "limit: 10" -- default returns top 10 only.
+      Can request more with ?limit=N if needed.
