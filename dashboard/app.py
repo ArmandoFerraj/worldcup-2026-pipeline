@@ -7,6 +7,12 @@ import plotly.express as px
 
 load_dotenv()
 
+st.set_page_config(
+    page_title="World Cup 2026 Dashboard",
+    layout="wide",
+)
+
+
 def get_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
@@ -16,6 +22,7 @@ def get_connection():
         password=os.getenv("DB_PASSWORD"),
     )
 
+
 def get_scorers():
     conn = get_connection()
     df = pd.read_sql(
@@ -24,6 +31,7 @@ def get_scorers():
     )
     conn.close()
     return df
+
 
 def get_standings():
     conn = get_connection()
@@ -44,51 +52,71 @@ def get_standings():
     return df
 
 
+# Adjust this ratio to resize the charts.
+# [3, 1] = chart is 75% width. Higher first number = wider chart.
+CHART_RATIO = [2, 1]
+
+
 st.title("World Cup 2026 Dashboard")
 
-# ---------------- Golden Boot Race ----------------
-st.header("Golden Boot Race")
-
-scorers = get_scorers()
-
-# find the top 6 scorers by their current max goals
-top_players = (
-    scorers.groupby("player_name")["goals"].max().sort_values(ascending=False).head(6).index
+tab_tournament, tab_group, tab_knockout = st.tabs(
+    ["Tournament", "Group Stage", "Knockouts"]
 )
-scorers_top = scorers[scorers["player_name"].isin(top_players)]
 
-boot_fig = px.line(
-    scorers_top,
-    x="snapshot_date",
-    y="goals",
-    color="player_name",
-    markers=True,
-    labels={"snapshot_date": "Date", "goals": "Goals", "player_name": "Player"},
-)
-boot_fig.update_layout(legend_title_text="Player", height=500)
-st.plotly_chart(boot_fig, use_container_width=True)
+# ---------------- TOURNAMENT TAB ----------------
+with tab_tournament:
+    st.header("Golden Boot Race")
+
+    scorers = get_scorers()
+
+    top_players = (
+        scorers.groupby("player_name")["goals"].max().sort_values(ascending=False).head(5).index
+    )
+    scorers_top = scorers[scorers["player_name"].isin(top_players)]
+
+    boot_fig = px.line(
+        scorers_top,
+        x="snapshot_date",
+        y="goals",
+        color="player_name",
+        markers=True,
+        labels={"snapshot_date": "Date", "goals": "Goals", "player_name": "Player"},
+    )
+    boot_fig.update_layout(legend_title_text="Player", height=500)
+
+    col, _ = st.columns(CHART_RATIO)
+    with col:
+        st.plotly_chart(boot_fig, use_container_width=True)
 
 
-# ---------------- Position Race by Group (Bump Chart) ----------------
-st.header("Position Race by Group")
+# ---------------- GROUP STAGE TAB ----------------
+with tab_group:
+    st.header("Position Race by Group")
 
-standings = get_standings()
+    standings = get_standings()
 
-# group selector
-groups = sorted(standings["group_name"].unique())
-selected_group = st.selectbox("Select a group", groups)
+    groups = sorted(standings["group_name"].unique())
+    selected_group = st.selectbox("Select a group", groups)
 
-# filter to the chosen group
-group_df = standings[standings["group_name"] == selected_group]
+    group_df = standings[standings["group_name"] == selected_group]
 
-bump_fig = px.line(
-    group_df,
-    x="snapshot_date",
-    y="position",
-    color="team_name",
-    markers=True,
-    labels={"snapshot_date": "Date", "position": "Position", "team_name": "Team"},
-)
-bump_fig.update_yaxes(autorange="reversed")  # 1st place on top
-bump_fig.update_layout(legend_title_text="Team", height=500)
-st.plotly_chart(bump_fig, use_container_width=True)
+    bump_fig = px.line(
+        group_df,
+        x="snapshot_date",
+        y="position",
+        color="team_name",
+        markers=True,
+        labels={"snapshot_date": "Date", "position": "Position", "team_name": "Team"},
+    )
+    bump_fig.update_yaxes(autorange="reversed")
+    bump_fig.update_layout(legend_title_text="Team", height=500)
+
+    col, _ = st.columns(CHART_RATIO)
+    with col:
+        st.plotly_chart(bump_fig, use_container_width=True)
+
+
+# ---------------- KNOCKOUTS TAB ----------------
+with tab_knockout:
+    st.header("Knockout Bracket")
+    st.info("The bracket will appear here as the knockout rounds progress.")
