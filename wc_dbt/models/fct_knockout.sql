@@ -1,6 +1,7 @@
 {{ config(materialized='table') }}
 
 SELECT
+    (m.value ->> 'id')::int                            AS match_id,
     m.value ->> 'stage'                                AS stage,
     (m.value -> 'homeTeam' ->> 'id')::int              AS home_id,
     (m.value -> 'awayTeam' ->> 'id')::int              AS away_id,
