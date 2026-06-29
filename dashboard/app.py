@@ -1,23 +1,20 @@
 import streamlit as st
 import plotly.express as px
-from data import get_scorers, get_standings
+from data import get_scorers, get_standings, get_assisters
 
 st.set_page_config(
     page_title="World Cup 2026 Dashboard",
     layout="wide",
 )
-
-# Adjust this ratio to resize the charts.
-# [3, 1] = chart is 75% width. Higher first number = wider chart.
 CHART_RATIO = [2, 1]
 
-
 # ============ TOURNAMENT RACE RENDERERS ============
-# Each race is a self-contained function: it draws its own metric
-# cards + chart. To add a new race (assists, total goals, etc.),
-# write a new render_* function and register it in RACES below.
+# Each race is a self-contained function: it fetches its own data and
+# draws its own metric cards + chart. To add a new race (total goals,
+# etc.), write a new render_* function and register it in RACES below.
 
-def render_golden_boot(scorers):
+def render_golden_boot():
+    scorers = get_scorers()
     latest_date = scorers["snapshot_date"].max()
     latest = scorers[scorers["snapshot_date"] == latest_date]
 
@@ -52,10 +49,47 @@ def render_golden_boot(scorers):
         st.plotly_chart(fig, use_container_width=True)
 
 
+def render_assists():
+    assisters = get_assisters()
+    latest_date = assisters["snapshot_date"].max()
+    latest = assisters[assisters["snapshot_date"] == latest_date]
+
+    top_row = latest.sort_values("assists", ascending=False).iloc[0]
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Top Assister", top_row["player_name"], f"{int(top_row['assists'])} assists")
+    m2.metric("Total Assists", int(latest["assists"].sum()))
+    m3.metric("Players With Assists", int((latest["assists"] > 0).sum()))
+
+    st.divider()
+    st.header("Assist Leaders")
+
+    top_players = (
+        assisters.groupby("player_name")["assists"].max().sort_values(ascending=False).head(5).index
+    )
+    assisters_top = assisters[assisters["player_name"].isin(top_players)]
+
+    fig = px.line(
+        assisters_top,
+        x="snapshot_date",
+        y="assists",
+        color="player_name",
+        markers=True,
+        labels={"snapshot_date": "Date", "assists": "Assists", "player_name": "Player"},
+    )
+    fig.update_xaxes(tickformat="%m-%d")
+    fig.update_layout(legend_title_text="Player", height=500)
+
+    col, _ = st.columns(CHART_RATIO)
+    with col:
+        st.plotly_chart(fig, use_container_width=True)
+
+
 # Register tournament races here. Key = label shown in the selector,
 # value = the render function. Add new races by adding a line.
 RACES = {
     "Golden Boot": render_golden_boot,
+    "Assists": render_assists,
 }
 
 
@@ -82,12 +116,10 @@ def render_position_race(group_df):
     with col:
         st.plotly_chart(fig, use_container_width=True)
 
-
 # Register group-stage views here.
 GROUP_VIEWS = {
     "Position": render_position_race,
 }
-
 
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
@@ -128,9 +160,7 @@ tab_tournament, tab_group, tab_knockout = st.tabs(
 
 # ---------------- TOURNAMENT TAB ----------------
 with tab_tournament:
-    scorers = get_scorers()
-
-    # Selector: pick which race to view (one option for now, easy to extend)
+    # Selector: pick which race to view
     selected_race = st.radio(
         "Select a race",
         options=list(RACES.keys()),
@@ -138,15 +168,14 @@ with tab_tournament:
         label_visibility="collapsed",
     )
 
-    # Render the selected race (its cards + chart)
-    RACES[selected_race](scorers)
+    # Render the selected race (it fetches its own data + draws cards + chart)
+    RACES[selected_race]()
 
     st.divider()
 
     # Fun-facts / superlatives section (placeholder for now)
     st.subheader("Fun Facts")
     st.info("Tournament superlatives coming soon.")
-
 
 # ---------------- GROUP STAGE TAB ----------------
 with tab_group:

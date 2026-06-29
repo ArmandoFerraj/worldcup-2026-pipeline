@@ -24,6 +24,15 @@ def get_scorers():
     df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], format="%Y-%m-%d_%H-%M")
     return df
 
+def get_assisters():
+    conn = get_connection()
+    df = pd.read_sql(
+        "SELECT snapshot_date, player_name, assists FROM fct_scorers ORDER BY snapshot_date",
+        conn,
+    )
+    conn.close()
+    df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], format="%Y-%m-%d_%H-%M")
+    return df
 
 def get_standings():
     conn = get_connection()
