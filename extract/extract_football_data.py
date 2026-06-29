@@ -34,7 +34,7 @@ endpoints = {
     "matches": "matches",
     "standings": "standings",
     "teams": "teams",
-    "scorers": "scorers?limit=100",
+    "scorers": "scorers?limit=900",
 }
 header = {"X-Auth-Token": api_key}
 
