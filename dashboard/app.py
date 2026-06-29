@@ -187,6 +187,126 @@ GROUP_VIEWS = {
     "Goal Difference": render_goal_difference,
 }
 
+
+# ============ KNOCKOUT BRACKET ============
+# Static skeleton: left-to-right rounds, hardcoded placeholder matches,
+# greying for eliminated teams, no connecting lines yet.
+#
+# Layout approach:
+#  - Round titles live in their own aligned header row (parallel).
+#  - Every round column shares the SAME fixed height + justify-content:
+#    space-around, so each round's matches auto-center against their
+#    feeder pair -> symmetric bracket. (16 -> 8 -> 4 -> 2 -> 1)
+#  - Third-place match is dropped (it breaks the clean funnel symmetry).
+#
+# NOTE: HTML is built with NO leading whitespace per line, otherwise
+# Streamlit's markdown parser treats indented lines as code blocks.
+
+# Height tuned to fit 16 R32 matches comfortably; other rounds stretch
+# to match, which produces the feeder-midpoint alignment.
+BRACKET_HEIGHT = 1400
+
+
+def _match_box(home, away, home_score, away_score, winner):
+    """HTML for one match box. winner: 'home', 'away', or None (unplayed)."""
+    home_cls = "team eliminated" if winner == "away" else "team"
+    away_cls = "team eliminated" if winner == "home" else "team"
+    hs = "" if home_score is None else home_score
+    as_ = "" if away_score is None else away_score
+    home = home or "TBD"
+    away = away or "TBD"
+    return (
+        '<div class="match">'
+        f'<div class="{home_cls}"><span class="tla">{home}</span><span class="score">{hs}</span></div>'
+        f'<div class="{away_cls}"><span class="tla">{away}</span><span class="score">{as_}</span></div>'
+        '</div>'
+    )
+
+
+def render_bracket():
+    # tuple = (home, away, home_score, away_score, winner)
+    # Clean funnel: 16 R32 -> 8 R16 -> 4 QF -> 2 SF -> 1 Final.
+    rounds = {
+        "Round of 32": [
+            ("RSA", "CAN", 0, 1, "away"),
+            ("BRA", "KOR", 2, 0, "home"),
+            ("ARG", "AUS", 3, 1, "home"),
+            ("FRA", "POL", 1, 0, "home"),
+            ("ENG", "SEN", 2, 1, "home"),
+            ("ESP", "MAR", 0, 1, "away"),
+            ("GER", "JPN", 1, 2, "away"),
+            ("POR", "SUI", 4, 1, "home"),
+            ("NED", "USA", 3, 1, "home"),
+            ("CRO", "MEX", 1, 0, "home"),
+            ("BEL", "URU", 2, 2, "away"),
+            ("ITA", "NGA", 1, 0, "home"),
+            ("COL", "EGY", 2, 1, "home"),
+            ("DEN", "GHA", 0, 2, "away"),
+            ("SRB", "ECU", 1, 3, "away"),
+            ("WAL", "QAT", 2, 0, "home"),
+        ],
+        "Round of 16": [
+            ("CAN", "BRA", None, None, None),
+            ("ARG", "FRA", None, None, None),
+            ("ENG", "MAR", None, None, None),
+            ("JPN", "POR", None, None, None),
+            ("NED", "CRO", None, None, None),
+            ("URU", "ITA", None, None, None),
+            ("COL", "GHA", None, None, None),
+            ("ECU", "WAL", None, None, None),
+        ],
+        "Quarter-finals": [
+            (None, None, None, None, None),
+            (None, None, None, None, None),
+            (None, None, None, None, None),
+            (None, None, None, None, None),
+        ],
+        "Semi-finals": [
+            (None, None, None, None, None),
+            (None, None, None, None, None),
+        ],
+        "Final": [
+            (None, None, None, None, None),
+        ],
+    }
+
+    # Header row: all round titles, aligned and parallel.
+    headers_html = ""
+    for round_name in rounds:
+        headers_html += f'<div class="round-title">{round_name}</div>'
+
+    # Bracket body: each round is an equal-height column of matches.
+    columns_html = ""
+    for matches in rounds.values():
+        boxes = "".join(_match_box(*m) for m in matches)
+        columns_html += f'<div class="round">{boxes}</div>'
+
+    css = (
+        "<style>"
+        ".bracket-wrap{overflow-x:auto;padding:4px 4px 24px 4px;}"
+        ".bracket-headers{display:flex;gap:72px;}"
+        ".bracket-headers .round-title{min-width:170px;text-align:center;font-weight:600;font-size:0.8rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.04em;padding-bottom:10px;}"
+        f".bracket-body{{display:flex;gap:72px;height:{BRACKET_HEIGHT}px;}}"
+        ".round{display:flex;flex-direction:column;justify-content:space-around;min-width:170px;}"
+        ".match{background:#161b22;border:1px solid #30363d;border-radius:6px;overflow:hidden;}"
+        ".team{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:0.9rem;color:#f0f6fc;}"
+        ".match .team:first-child{border-bottom:1px solid #30363d;}"
+        ".team.eliminated{color:#6e7681;opacity:0.6;}"
+        ".tla{font-weight:600;letter-spacing:0.03em;}"
+        ".score{color:#8b949e;}"
+        "</style>"
+    )
+
+    html = (
+        f'{css}'
+        '<div class="bracket-wrap">'
+        f'<div class="bracket-headers">{headers_html}</div>'
+        f'<div class="bracket-body">{columns_html}</div>'
+        '</div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
+
+
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.title("⚽ World Cup 2026")
@@ -268,4 +388,4 @@ with tab_group:
 # ---------------- KNOCKOUTS TAB ----------------
 with tab_knockout:
     st.header("Knockout Bracket")
-    st.info("The bracket will appear here as the knockout rounds progress.")
+    render_bracket()
