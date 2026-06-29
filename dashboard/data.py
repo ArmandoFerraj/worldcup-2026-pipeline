@@ -42,6 +42,8 @@ def get_standings():
             fct_standings.snapshot_date,
             fct_standings.position,
             fct_standings.points,
+            fct_standings.goals_for,
+            fct_standings.goal_difference,
             dim_teams.team_name,
             dim_teams.group_name
         FROM fct_standings

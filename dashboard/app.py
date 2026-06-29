@@ -94,12 +94,31 @@ RACES = {
 
 
 # ============ GROUP STAGE VIEW RENDERERS ============
-# Each view draws one chart for a single group's dataframe (group_df).
-# To add a new view (points, goal difference, etc.), write a new
-# render_group_* function and register it in GROUP_VIEWS below.
+# Each view is self-contained: given a single group's dataframe
+# (group_df), it draws its own metric cards + chart. To add a new view,
+# write a new render_group_* function and register it in GROUP_VIEWS below.
+
+def _group_cards(group_df, stat_col, stat_suffix):
+    """Draw one card per team showing the current value of stat_col."""
+    latest_date = group_df["snapshot_date"].max()
+    latest_group = group_df[group_df["snapshot_date"] == latest_date].sort_values("position")
+
+    cards = st.columns(len(latest_group))
+    for card, (_, row) in zip(cards, latest_group.iterrows()):
+        card.metric(
+            row["team_name"],
+            f"{int(row[stat_col])} {stat_suffix}",
+            f"{int(row['position'])} place",
+            delta_color="off",
+        )
+
 
 def render_position_race(group_df):
+    _group_cards(group_df, "points", "pts")
+
+    st.divider()
     st.header("Position Race")
+
     fig = px.line(
         group_df,
         x="snapshot_date",
@@ -116,9 +135,56 @@ def render_position_race(group_df):
     with col:
         st.plotly_chart(fig, use_container_width=True)
 
+
+def render_goals_for(group_df):
+    _group_cards(group_df, "goals_for", "goals")
+
+    st.divider()
+    st.header("Goals For")
+
+    fig = px.line(
+        group_df,
+        x="snapshot_date",
+        y="goals_for",
+        color="team_name",
+        markers=True,
+        labels={"snapshot_date": "Date", "goals_for": "Goals", "team_name": "Team"},
+    )
+    fig.update_xaxes(tickformat="%m-%d")
+    fig.update_layout(legend_title_text="Team", height=500)
+
+    col, _ = st.columns(CHART_RATIO)
+    with col:
+        st.plotly_chart(fig, use_container_width=True)
+
+
+def render_goal_difference(group_df):
+    _group_cards(group_df, "goal_difference", "GD")
+
+    st.divider()
+    st.header("Goal Difference")
+
+    fig = px.line(
+        group_df,
+        x="snapshot_date",
+        y="goal_difference",
+        color="team_name",
+        markers=True,
+        labels={"snapshot_date": "Date", "goal_difference": "Goal Difference", "team_name": "Team"},
+    )
+    fig.update_xaxes(tickformat="%m-%d")
+    fig.update_layout(legend_title_text="Team", height=500)
+
+    col, _ = st.columns(CHART_RATIO)
+    with col:
+        st.plotly_chart(fig, use_container_width=True)
+
+
 # Register group-stage views here.
 GROUP_VIEWS = {
     "Position": render_position_race,
+    "Goals For": render_goals_for,
+    "Goal Difference": render_goal_difference,
 }
 
 # ---------------- SIDEBAR ----------------
@@ -195,22 +261,7 @@ with tab_group:
 
     group_df = standings[standings["group_name"] == selected_group]
 
-    # Cards: current points for each team in the selected group
-    latest_date = group_df["snapshot_date"].max()
-    latest_group = group_df[group_df["snapshot_date"] == latest_date].sort_values("position")
-
-    cards = st.columns(len(latest_group))
-    for card, (_, row) in zip(cards, latest_group.iterrows()):
-        card.metric(
-            row["team_name"],
-            f"{int(row['points'])} pts",
-            f"{int(row['position'])} place",
-            delta_color="off",
-        )
-
-    st.divider()
-
-    # Render the selected view (its chart)
+    # Render the selected view (it draws its own cards + chart)
     GROUP_VIEWS[selected_view](group_df)
 
 
