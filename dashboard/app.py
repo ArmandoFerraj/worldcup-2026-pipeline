@@ -1,6 +1,7 @@
 import streamlit as st
+import pandas as pd
 import plotly.express as px
-from data import get_scorers, get_standings, get_assisters
+from data import get_scorers, get_standings, get_assisters, get_knockout
 
 st.set_page_config(
     page_title="World Cup 2026 Dashboard",
@@ -189,8 +190,7 @@ GROUP_VIEWS = {
 
 
 # ============ KNOCKOUT BRACKET ============
-# Static skeleton: left-to-right rounds, hardcoded placeholder matches,
-# greying for eliminated teams, no connecting lines yet.
+# Real-data bracket: left-to-right rounds, greying for eliminated teams.
 #
 # Layout approach:
 #  - Round titles live in their own aligned header row (parallel).
@@ -198,6 +198,7 @@ GROUP_VIEWS = {
 #    space-around, so each round's matches auto-center against their
 #    feeder pair -> symmetric bracket. (16 -> 8 -> 4 -> 2 -> 1)
 #  - Third-place match is dropped (it breaks the clean funnel symmetry).
+#  - Matches come from get_knockout(), ordered by match_id (bracket order).
 #
 # NOTE: HTML is built with NO leading whitespace per line, otherwise
 # Streamlit's markdown parser treats indented lines as code blocks.
@@ -205,6 +206,16 @@ GROUP_VIEWS = {
 # Height tuned to fit 16 R32 matches comfortably; other rounds stretch
 # to match, which produces the feeder-midpoint alignment.
 BRACKET_HEIGHT = 1400
+
+# DB stage -> display name, in left-to-right order. THIRD_PLACE is
+# intentionally omitted (it breaks the clean funnel symmetry).
+STAGE_DISPLAY = [
+    ("LAST_32", "Round of 32"),
+    ("LAST_16", "Round of 16"),
+    ("QUARTER_FINALS", "Quarter-finals"),
+    ("SEMI_FINALS", "Semi-finals"),
+    ("FINAL", "Final"),
+]
 
 
 def _match_box(home, away, home_score, away_score, winner):
@@ -223,52 +234,25 @@ def _match_box(home, away, home_score, away_score, winner):
     )
 
 
+def _row_to_match(row):
+    """Convert a get_knockout() dataframe row to a clean match tuple,
+    normalizing pandas NaN -> None and float scores -> int."""
+    home = row["home_tla"] if pd.notna(row["home_tla"]) else None
+    away = row["away_tla"] if pd.notna(row["away_tla"]) else None
+    home_score = int(row["home_score"]) if pd.notna(row["home_score"]) else None
+    away_score = int(row["away_score"]) if pd.notna(row["away_score"]) else None
+    winner = row["winner"] if pd.notna(row["winner"]) else None
+    return (home, away, home_score, away_score, winner)
+
+
 def render_bracket():
-    # tuple = (home, away, home_score, away_score, winner)
-    # Clean funnel: 16 R32 -> 8 R16 -> 4 QF -> 2 SF -> 1 Final.
-    rounds = {
-        "Round of 32": [
-            ("RSA", "CAN", 0, 1, "away"),
-            ("BRA", "KOR", 2, 0, "home"),
-            ("ARG", "AUS", 3, 1, "home"),
-            ("FRA", "POL", 1, 0, "home"),
-            ("ENG", "SEN", 2, 1, "home"),
-            ("ESP", "MAR", 0, 1, "away"),
-            ("GER", "JPN", 1, 2, "away"),
-            ("POR", "SUI", 4, 1, "home"),
-            ("NED", "USA", 3, 1, "home"),
-            ("CRO", "MEX", 1, 0, "home"),
-            ("BEL", "URU", 2, 2, "away"),
-            ("ITA", "NGA", 1, 0, "home"),
-            ("COL", "EGY", 2, 1, "home"),
-            ("DEN", "GHA", 0, 2, "away"),
-            ("SRB", "ECU", 1, 3, "away"),
-            ("WAL", "QAT", 2, 0, "home"),
-        ],
-        "Round of 16": [
-            ("CAN", "BRA", None, None, None),
-            ("ARG", "FRA", None, None, None),
-            ("ENG", "MAR", None, None, None),
-            ("JPN", "POR", None, None, None),
-            ("NED", "CRO", None, None, None),
-            ("URU", "ITA", None, None, None),
-            ("COL", "GHA", None, None, None),
-            ("ECU", "WAL", None, None, None),
-        ],
-        "Quarter-finals": [
-            (None, None, None, None, None),
-            (None, None, None, None, None),
-            (None, None, None, None, None),
-            (None, None, None, None, None),
-        ],
-        "Semi-finals": [
-            (None, None, None, None, None),
-            (None, None, None, None, None),
-        ],
-        "Final": [
-            (None, None, None, None, None),
-        ],
-    }
+    df = get_knockout()
+
+    # Build the rounds dict from real data, in bracket order.
+    rounds = {}
+    for db_stage, display_name in STAGE_DISPLAY:
+        stage_rows = df[df["stage"] == db_stage]  # already match_id ordered
+        rounds[display_name] = [_row_to_match(row) for _, row in stage_rows.iterrows()]
 
     # Header row: all round titles, aligned and parallel.
     headers_html = ""

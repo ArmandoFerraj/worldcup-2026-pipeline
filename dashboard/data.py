@@ -57,3 +57,28 @@ def get_standings():
     return df
 
     
+def get_knockout():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        SELECT
+            fct_knockout.match_id,
+            fct_knockout.stage,
+            home_team.team_tla AS home_tla,
+            away_team.team_tla AS away_tla,
+            fct_knockout.home_score,
+            fct_knockout.away_score,
+            CASE
+                WHEN fct_knockout.winner_id = fct_knockout.home_id THEN 'home'
+                WHEN fct_knockout.winner_id = fct_knockout.away_id THEN 'away'
+                ELSE NULL
+            END AS winner
+        FROM fct_knockout
+        LEFT JOIN dim_teams AS home_team ON fct_knockout.home_id::text = home_team.team_id
+        LEFT JOIN dim_teams AS away_team ON fct_knockout.away_id::text = away_team.team_id
+        ORDER BY fct_knockout.match_id
+        """,
+        conn,
+    )
+    conn.close()
+    return df
