@@ -57,6 +57,43 @@ def get_standings():
     return df
 
 
+def get_penalty_merchant():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        WITH latest AS (
+            SELECT player_name, penalties
+            FROM fct_scorers
+            WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM fct_scorers)
+        )
+        SELECT player_name, penalties
+        FROM latest
+        WHERE penalties = (SELECT MAX(penalties) FROM latest)
+        ORDER BY player_name
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
+def get_worst_team():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        SELECT dim_teams.team_name, fct_standings.points, fct_standings.goal_difference
+        FROM fct_standings
+        JOIN dim_teams ON fct_standings.team_id = dim_teams.team_id
+        WHERE fct_standings.snapshot_date = (SELECT MAX(snapshot_date) FROM fct_standings)
+        ORDER BY fct_standings.points ASC, fct_standings.goal_difference ASC
+        LIMIT 1
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
 def get_knockout():
     conn = get_connection()
     df = pd.read_sql(

@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.express as px
-from data import get_scorers, get_standings, get_assisters
+from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team
 from bracket import render_bracket
 
 st.set_page_config(
@@ -257,7 +257,27 @@ with tab_tournament:
     st.divider()
 
     st.subheader("Fun Facts")
-    st.info("Tournament superlatives coming soon.")
+
+    fact1, fact2 = st.columns(2)
+
+    with fact1:
+        pen = get_penalty_merchant()
+        max_pens = int(pen["penalties"].iloc[0])
+        if max_pens == 1:
+            st.metric("Penalty Leaders", f"{len(pen)} players", "1 penalty each", delta_color="off")
+        else:
+            names = ", ".join(pen["player_name"].tolist())
+            st.metric("Penalty Merchant", names, f"{max_pens} penalties", delta_color="off")
+
+    with fact2:
+        worst = get_worst_team()
+        row = worst.iloc[0]
+        st.metric(
+            "Worst Team",
+            row["team_name"],
+            f"{int(row['points'])} pts, {int(row['goal_difference'])} GD",
+            delta_color="off",
+        )
 
 # ---------------- GROUP STAGE TAB ----------------
 with tab_group:
