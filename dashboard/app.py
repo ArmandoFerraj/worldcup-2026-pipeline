@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.express as px
-from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team, get_top_scoring_team, get_oldest_scorer, get_squad_age_extremes
+from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team, get_top_scoring_team, get_oldest_scorer, get_squad_age_extremes, get_highest_scoring_match, get_biggest_margin, get_most_clean_sheets
 from bracket import render_bracket
 
 st.set_page_config(
@@ -314,6 +314,34 @@ with tab_tournament:
             f"{youngest_squad['avg_age']:.1f} avg age",
             delta_color="off",
         )
+
+    st.write("")
+
+    fact7, fact8, fact9 = st.columns(3)
+
+    with fact7:
+        hi = get_highest_scoring_match().iloc[0]
+        st.metric(
+            "Highest-Scoring Match",
+            f"{hi['home_name']} {int(hi['home_score'])}-{int(hi['away_score'])} {hi['away_name']}",
+            f"{int(hi['total_goals'])} goals",
+            delta_color="off",
+        )
+
+    with fact8:
+        mg = get_biggest_margin().iloc[0]
+        st.metric(
+            "Biggest Margin",
+            f"{mg['home_name']} {int(mg['home_score'])}-{int(mg['away_score'])} {mg['away_name']}",
+            f"{int(mg['margin'])} goal margin",
+            delta_color="off",
+        )
+
+    with fact9:
+        cs = get_most_clean_sheets()
+        names = ", ".join(cs["team_name"].tolist())
+        count = int(cs["clean_sheets"].iloc[0])
+        st.metric("Most Clean Sheets", names, f"{count} clean sheets", delta_color="off")
 
 # ---------------- GROUP STAGE TAB ----------------
 with tab_group:

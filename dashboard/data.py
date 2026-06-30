@@ -162,6 +162,77 @@ def get_squad_age_extremes():
     return df
 
 
+def get_highest_scoring_match():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        SELECT
+            home_team.team_name AS home_name,
+            away_team.team_name AS away_name,
+            fct_matches.home_score,
+            fct_matches.away_score,
+            fct_matches.home_score + fct_matches.away_score AS total_goals
+        FROM fct_matches
+        JOIN dim_teams AS home_team ON fct_matches.home_id::text = home_team.team_id
+        JOIN dim_teams AS away_team ON fct_matches.away_id::text = away_team.team_id
+        ORDER BY total_goals DESC
+        LIMIT 1
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
+def get_biggest_margin():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        SELECT
+            home_team.team_name AS home_name,
+            away_team.team_name AS away_name,
+            fct_matches.home_score,
+            fct_matches.away_score,
+            ABS(fct_matches.home_score - fct_matches.away_score) AS margin
+        FROM fct_matches
+        JOIN dim_teams AS home_team ON fct_matches.home_id::text = home_team.team_id
+        JOIN dim_teams AS away_team ON fct_matches.away_id::text = away_team.team_id
+        ORDER BY margin DESC
+        LIMIT 1
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
+def get_most_clean_sheets():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        WITH conceded AS (
+            SELECT home_id AS team_id, away_score AS goals_conceded FROM fct_matches
+            UNION ALL
+            SELECT away_id AS team_id, home_score AS goals_conceded FROM fct_matches
+        ),
+        sheets AS (
+            SELECT team_id, COUNT(*) AS clean_sheets
+            FROM conceded
+            WHERE goals_conceded = 0
+            GROUP BY team_id
+        )
+        SELECT dim_teams.team_name, sheets.clean_sheets
+        FROM sheets
+        JOIN dim_teams ON sheets.team_id::text = dim_teams.team_id
+        WHERE sheets.clean_sheets = (SELECT MAX(clean_sheets) FROM sheets)
+        ORDER BY dim_teams.team_name
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
 def get_knockout():
     conn = get_connection()
     df = pd.read_sql(
