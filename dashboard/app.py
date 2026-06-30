@@ -9,6 +9,9 @@ st.set_page_config(
 )
 CHART_RATIO = [2, 1]
 
+# Chart line colors, chosen to fit the dark theme and stay distinguishable.
+CHART_COLORS = ["#58a6ff", "#a855f7", "#3fb950", "#f778ba", "#ff9e64"]
+
 # ============ TOURNAMENT RACE RENDERERS ============
 
 def render_golden_boot():
@@ -38,6 +41,7 @@ def render_golden_boot():
         color="player_name",
         markers=True,
         labels={"snapshot_date": "Date", "goals": "Goals", "player_name": "Player"},
+        color_discrete_sequence=CHART_COLORS,
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Player", height=500)
@@ -74,6 +78,7 @@ def render_assists():
         color="player_name",
         markers=True,
         labels={"snapshot_date": "Date", "assists": "Assists", "player_name": "Player"},
+        color_discrete_sequence=CHART_COLORS,
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Player", height=500)
@@ -119,6 +124,7 @@ def render_position_race(group_df):
         color="team_name",
         markers=True,
         labels={"snapshot_date": "Date", "position": "Position", "team_name": "Team"},
+        color_discrete_sequence=CHART_COLORS,
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_yaxes(autorange="reversed")
@@ -142,6 +148,7 @@ def render_goals_for(group_df):
         color="team_name",
         markers=True,
         labels={"snapshot_date": "Date", "goals_for": "Goals", "team_name": "Team"},
+        color_discrete_sequence=CHART_COLORS,
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Team", height=500)
@@ -164,6 +171,7 @@ def render_goal_difference(group_df):
         color="team_name",
         markers=True,
         labels={"snapshot_date": "Date", "goal_difference": "Goal Difference", "team_name": "Team"},
+        color_discrete_sequence=CHART_COLORS,
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Team", height=500)
