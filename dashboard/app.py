@@ -199,6 +199,8 @@ GROUP_VIEWS = {
 #    feeder pair -> symmetric bracket. (16 -> 8 -> 4 -> 2 -> 1)
 #  - Third-place match is dropped (it breaks the clean funnel symmetry).
 #  - Matches come from get_knockout(), ordered by match_id (bracket order).
+#  - A small note above a match shows (OT) for extra-time wins or
+#    (pens H-A) for penalty shootouts.
 #
 # NOTE: HTML is built with NO leading whitespace per line, otherwise
 # Streamlit's markdown parser treats indented lines as code blocks.
@@ -218,18 +220,35 @@ STAGE_DISPLAY = [
 ]
 
 
-def _match_box(home, away, home_score, away_score, winner):
-    """HTML for one match box. winner: 'home', 'away', or None (unplayed)."""
+def _match_box(home, away, home_score, away_score, winner, duration, home_pens, away_pens):
+    """HTML for one match box, with an optional indicator line above it.
+
+    winner: 'home', 'away', or None (unplayed).
+    duration: 'REGULAR', 'EXTRA_TIME', 'PENALTY_SHOOTOUT', or None.
+    home_pens/away_pens: shootout scores (only used for PENALTY_SHOOTOUT).
+    """
     home_cls = "team eliminated" if winner == "away" else "team"
     away_cls = "team eliminated" if winner == "home" else "team"
     hs = "" if home_score is None else home_score
     as_ = "" if away_score is None else away_score
     home = home or "TBD"
     away = away or "TBD"
+
+    # Note appended to the winning team's name: (OT) for extra time,
+    # (pens H-A) for a shootout. Nothing for regulation/unplayed.
+    note = ""
+    if duration == "EXTRA_TIME":
+        note = '<span class="match-note">(OT)</span>'
+    elif duration == "PENALTY_SHOOTOUT" and home_pens is not None and away_pens is not None:
+        note = f'<span class="match-note">(pens {home_pens}-{away_pens})</span>'
+
+    home_label = f"{home}{note}" if winner == "home" else home
+    away_label = f"{away}{note}" if winner == "away" else away
+
     return (
         '<div class="match">'
-        f'<div class="{home_cls}"><span class="tla">{home}</span><span class="score">{hs}</span></div>'
-        f'<div class="{away_cls}"><span class="tla">{away}</span><span class="score">{as_}</span></div>'
+        f'<div class="{home_cls}"><span class="tla">{home_label}</span><span class="score">{hs}</span></div>'
+        f'<div class="{away_cls}"><span class="tla">{away_label}</span><span class="score">{as_}</span></div>'
         '</div>'
     )
 
@@ -242,7 +261,10 @@ def _row_to_match(row):
     home_score = int(row["home_score"]) if pd.notna(row["home_score"]) else None
     away_score = int(row["away_score"]) if pd.notna(row["away_score"]) else None
     winner = row["winner"] if pd.notna(row["winner"]) else None
-    return (home, away, home_score, away_score, winner)
+    duration = row["duration"] if pd.notna(row["duration"]) else None
+    home_pens = int(row["home_penalties"]) if pd.notna(row["home_penalties"]) else None
+    away_pens = int(row["away_penalties"]) if pd.notna(row["away_penalties"]) else None
+    return (home, away, home_score, away_score, winner, duration, home_pens, away_pens)
 
 
 def render_bracket():
@@ -277,6 +299,7 @@ def render_bracket():
         ".match .team:first-child{border-bottom:1px solid #30363d;}"
         ".team.eliminated{color:#6e7681;opacity:0.6;}"
         ".tla{font-weight:600;letter-spacing:0.03em;}"
+        ".match-note{font-size:0.7rem;font-weight:400;color:#8b949e;letter-spacing:0;margin-left:5px;}"
         ".score{color:#8b949e;}"
         "</style>"
     )

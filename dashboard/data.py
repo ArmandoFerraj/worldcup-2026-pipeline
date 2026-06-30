@@ -64,10 +64,13 @@ def get_knockout():
         SELECT
             fct_knockout.match_id,
             fct_knockout.stage,
+            fct_knockout.duration,
             home_team.team_tla AS home_tla,
             away_team.team_tla AS away_tla,
             fct_knockout.home_score,
             fct_knockout.away_score,
+            fct_knockout.home_penalties,
+            fct_knockout.away_penalties,
             CASE
                 WHEN fct_knockout.winner_id = fct_knockout.home_id THEN 'home'
                 WHEN fct_knockout.winner_id = fct_knockout.away_id THEN 'away'
