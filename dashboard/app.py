@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.express as px
-from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team, get_top_scoring_team, get_oldest_scorer, get_squad_age_extremes, get_highest_scoring_match, get_biggest_margin, get_most_clean_sheets
+from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team, get_top_scoring_team, get_oldest_scorer, get_squad_age_extremes, get_highest_scoring_match, get_biggest_margin, get_most_clean_sheets, get_goals_follow_referee
 from bracket import render_bracket
 
 st.set_page_config(
@@ -342,6 +342,19 @@ with tab_tournament:
         names = ", ".join(cs["team_name"].tolist())
         count = int(cs["clean_sheets"].iloc[0])
         st.metric("Most Clean Sheets", names, f"{count} clean sheets", delta_color="off")
+
+    st.write("")
+
+    fact10, fact11, fact12 = st.columns(3)
+
+    with fact10:
+        ref = get_goals_follow_referee().iloc[0]
+        st.metric(
+            "Goals Follow This Ref",
+            ref["referee_name"],
+            f"{ref['avg_goals']:.1f} avg over {int(ref['matches'])} games",
+            delta_color="off",
+        )
 
 # ---------------- GROUP STAGE TAB ----------------
 with tab_group:

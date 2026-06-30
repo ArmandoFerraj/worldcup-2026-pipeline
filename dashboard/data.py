@@ -233,6 +233,37 @@ def get_most_clean_sheets():
     return df
 
 
+def get_goals_follow_referee():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        WITH ref_games AS (
+            SELECT
+                fct_match_referees.referee_name,
+                fct_matches.home_score + fct_matches.away_score AS total_goals
+            FROM fct_match_referees
+            JOIN fct_matches ON fct_match_referees.match_id = fct_matches.match_id
+        ),
+        ref_avgs AS (
+            SELECT
+                referee_name,
+                COUNT(*) AS matches,
+                AVG(total_goals) AS avg_goals
+            FROM ref_games
+            GROUP BY referee_name
+            HAVING COUNT(*) >= 2
+        )
+        SELECT referee_name, matches, avg_goals
+        FROM ref_avgs
+        ORDER BY avg_goals DESC
+        LIMIT 1
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
 def get_knockout():
     conn = get_connection()
     df = pd.read_sql(
