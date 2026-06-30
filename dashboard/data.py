@@ -94,6 +94,27 @@ def get_worst_team():
     return df
 
 
+def get_top_scoring_team():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        WITH latest AS (
+            SELECT fct_standings.team_id, fct_standings.goals_for, dim_teams.team_name
+            FROM fct_standings
+            JOIN dim_teams ON fct_standings.team_id = dim_teams.team_id
+            WHERE fct_standings.snapshot_date = (SELECT MAX(snapshot_date) FROM fct_standings)
+        )
+        SELECT team_name, goals_for
+        FROM latest
+        WHERE goals_for = (SELECT MAX(goals_for) FROM latest)
+        ORDER BY team_name
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
 def get_knockout():
     conn = get_connection()
     df = pd.read_sql(
