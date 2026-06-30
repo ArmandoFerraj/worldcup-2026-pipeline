@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.express as px
-from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team, get_top_scoring_team
+from data import get_scorers, get_standings, get_assisters, get_penalty_merchant, get_worst_team, get_top_scoring_team, get_oldest_scorer, get_squad_age_extremes
 from bracket import render_bracket
 
 st.set_page_config(
@@ -285,6 +285,35 @@ with tab_tournament:
         names = ", ".join(top_scoring["team_name"].tolist())
         goals = int(top_scoring["goals_for"].iloc[0])
         st.metric("Most Goals", names, f"{goals} goals", delta_color="off")
+
+    st.write("")
+
+    fact4, fact5, fact6 = st.columns(3)
+
+    with fact4:
+        oldest = get_oldest_scorer()
+        row = oldest.iloc[0]
+        st.metric("Oldest Scorer", row["player_name"], f"{int(row['age'])} years old", delta_color="off")
+
+    ages = get_squad_age_extremes()
+    oldest_squad = ages[ages["kind"] == "oldest"].iloc[0]
+    youngest_squad = ages[ages["kind"] == "youngest"].iloc[0]
+
+    with fact5:
+        st.metric(
+            "Oldest Squad",
+            oldest_squad["team_name"],
+            f"{oldest_squad['avg_age']:.1f} avg age",
+            delta_color="off",
+        )
+
+    with fact6:
+        st.metric(
+            "Youngest Squad",
+            youngest_squad["team_name"],
+            f"{youngest_squad['avg_age']:.1f} avg age",
+            delta_color="off",
+        )
 
 # ---------------- GROUP STAGE TAB ----------------
 with tab_group:

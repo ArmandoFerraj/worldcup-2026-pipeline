@@ -115,6 +115,53 @@ def get_top_scoring_team():
     return df
 
 
+def get_oldest_scorer():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        WITH scorers_latest AS (
+            SELECT DISTINCT player_id
+            FROM fct_scorers
+            WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM fct_scorers)
+              AND goals > 0
+        )
+        SELECT
+            dim_players.player_name,
+            dim_players.date_of_birth,
+            date_part('year', age(dim_players.date_of_birth::date))::int AS age
+        FROM scorers_latest
+        JOIN dim_players ON scorers_latest.player_id = dim_players.player_id
+        ORDER BY dim_players.date_of_birth ASC
+        LIMIT 1
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
+def get_squad_age_extremes():
+    conn = get_connection()
+    df = pd.read_sql(
+        """
+        WITH team_ages AS (
+            SELECT
+                dim_teams.team_name,
+                AVG(date_part('year', age(dim_players.date_of_birth::date))) AS avg_age
+            FROM dim_players
+            JOIN dim_teams ON dim_players.team_id = dim_teams.team_id
+            GROUP BY dim_teams.team_name
+        )
+        (SELECT team_name, avg_age, 'oldest' AS kind FROM team_ages ORDER BY avg_age DESC LIMIT 1)
+        UNION ALL
+        (SELECT team_name, avg_age, 'youngest' AS kind FROM team_ages ORDER BY avg_age ASC LIMIT 1)
+        """,
+        conn,
+    )
+    conn.close()
+    return df
+
+
 def get_knockout():
     conn = get_connection()
     df = pd.read_sql(
