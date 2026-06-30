@@ -198,9 +198,17 @@ GROUP_VIEWS = {
 #    space-around, so each round's matches auto-center against their
 #    feeder pair -> symmetric bracket. (16 -> 8 -> 4 -> 2 -> 1)
 #  - Third-place match is dropped (it breaks the clean funnel symmetry).
-#  - Matches come from get_knockout(), ordered by match_id (bracket order).
-#  - A small note above a match shows (OT) for extra-time wins or
+#  - A small note next to the winner shows (OT) for extra-time wins or
 #    (pens H-A) for penalty shootouts.
+#
+# Ordering (so the funnel lines up visually):
+#  - R32 is the anchor: sorted by match_id, top to bottom.
+#  - Each later round is REORDERED by tracing feeders: the previous
+#    round's matches pair up (positions 2N, 2N+1 feed slot N); we take
+#    those two feeders' winners and find the current-round match that
+#    contains them, placing it in slot N. Unresolved slots stay blank.
+#  - This avoids the bug where a winner lands in a match whose own
+#    match_id order doesn't match its visual feeder position.
 #
 # NOTE: HTML is built with NO leading whitespace per line, otherwise
 # Streamlit's markdown parser treats indented lines as code blocks.
@@ -220,8 +228,67 @@ STAGE_DISPLAY = [
 ]
 
 
+def _winner_id(row):
+    """The team id that advanced from a match row, or None if unresolved."""
+    if row is None:
+        return None
+    if pd.notna(row["winner_id"]):
+        return row["winner_id"]
+    return None
+
+
+def _find_match(pool, advancing_ids, used):
+    """Find the (unused) match in pool whose home_id or away_id is one of
+    the advancing team ids. Returns the row, or None if none match."""
+    if not advancing_ids:
+        return None
+    for _, m in pool.iterrows():
+        if m["match_id"] in used:
+            continue
+        if (pd.notna(m["home_id"]) and m["home_id"] in advancing_ids) or \
+           (pd.notna(m["away_id"]) and m["away_id"] in advancing_ids):
+            return m
+    return None
+
+
+def _order_rounds(df):
+    """Return [(display_name, [match_rows_or_None in visual order]), ...].
+
+    R32 is sorted by match_id (the fixed anchor). Each later round is
+    ordered by tracing each slot's two feeders' winners into that round.
+    """
+    by_stage = {db: df[df["stage"] == db] for db, _ in STAGE_DISPLAY}
+
+    # Anchor: R32 rows sorted by match_id, as a list of Series.
+    r32 = [row for _, row in by_stage["LAST_32"].sort_values("match_id").iterrows()]
+
+    ordered = [("Round of 32", r32)]
+    prev = r32
+
+    for db_stage, display in STAGE_DISPLAY[1:]:
+        pool = by_stage[db_stage]
+        n_slots = len(prev) // 2
+        curr = []
+        used = set()
+        for n in range(n_slots):
+            feeder_a = prev[2 * n]
+            feeder_b = prev[2 * n + 1]
+            advancing = {
+                t for t in (_winner_id(feeder_a), _winner_id(feeder_b))
+                if t is not None
+            }
+            match = _find_match(pool, advancing, used)
+            if match is not None:
+                used.add(match["match_id"])
+            curr.append(match)  # row or None (blank slot)
+        ordered.append((display, curr))
+        prev = curr
+
+    return ordered
+
+
 def _match_box(home, away, home_score, away_score, winner, duration, home_pens, away_pens):
-    """HTML for one match box, with an optional indicator line above it.
+    """HTML for one match box, with an optional indicator next to the winner.
 
     winner: 'home', 'away', or None (unplayed).
     duration: 'REGULAR', 'EXTRA_TIME', 'PENALTY_SHOOTOUT', or None.
@@ -255,7 +322,10 @@ def _match_box(home, away, home_score, away_score, winner, duration, home_pens, 
 
 def _row_to_match(row):
     """Convert a get_knockout() dataframe row to a clean match tuple,
-    normalizing pandas NaN -> None and float scores -> int."""
+    normalizing pandas NaN -> None and float scores -> int. A None row
+    (blank/unresolved slot) becomes an all-None tuple (renders as TBD)."""
+    if row is None:
+        return (None, None, None, None, None, None, None, None)
     home = row["home_tla"] if pd.notna(row["home_tla"]) else None
     away = row["away_tla"] if pd.notna(row["away_tla"]) else None
     home_score = int(row["home_score"]) if pd.notna(row["home_score"]) else None
@@ -269,22 +339,17 @@ def _row_to_match(row):
 
 def render_bracket():
     df = get_knockout()
-
-    # Build the rounds dict from real data, in bracket order.
-    rounds = {}
-    for db_stage, display_name in STAGE_DISPLAY:
-        stage_rows = df[df["stage"] == db_stage]  # already match_id ordered
-        rounds[display_name] = [_row_to_match(row) for _, row in stage_rows.iterrows()]
+    ordered = _order_rounds(df)
 
     # Header row: all round titles, aligned and parallel.
     headers_html = ""
-    for round_name in rounds:
+    for round_name, _ in ordered:
         headers_html += f'<div class="round-title">{round_name}</div>'
 
     # Bracket body: each round is an equal-height column of matches.
     columns_html = ""
-    for matches in rounds.values():
-        boxes = "".join(_match_box(*m) for m in matches)
+    for _, matches in ordered:
+        boxes = "".join(_match_box(*_row_to_match(m)) for m in matches)
         columns_html += f'<div class="round">{boxes}</div>'
 
     css = (

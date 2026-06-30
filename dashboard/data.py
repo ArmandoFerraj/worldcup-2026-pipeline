@@ -56,7 +56,7 @@ def get_standings():
     df["snapshot_date"] = pd.to_datetime(df["snapshot_date"], format="%Y-%m-%d_%H-%M")
     return df
 
-    
+
 def get_knockout():
     conn = get_connection()
     df = pd.read_sql(
@@ -65,6 +65,9 @@ def get_knockout():
             fct_knockout.match_id,
             fct_knockout.stage,
             fct_knockout.duration,
+            fct_knockout.home_id,
+            fct_knockout.away_id,
+            fct_knockout.winner_id,
             home_team.team_tla AS home_tla,
             away_team.team_tla AS away_tla,
             fct_knockout.home_score,
