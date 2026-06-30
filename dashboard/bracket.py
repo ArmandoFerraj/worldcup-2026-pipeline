@@ -79,8 +79,14 @@ def _match_box(home, away, home_score, away_score, winner, duration, home_pens, 
     duration: 'REGULAR', 'EXTRA_TIME', 'PENALTY_SHOOTOUT', or None.
     home_pens/away_pens: shootout scores (only used for PENALTY_SHOOTOUT).
     """
-    home_cls = "team eliminated" if winner == "away" else "team"
-    away_cls = "team eliminated" if winner == "home" else "team"
+    # A cell is greyed if its team lost (eliminated) or isn't determined
+    # yet (TBD). The advancing team gets a subtle accent.
+    home_cls = "team eliminated" if (winner == "away" or home is None) else "team"
+    away_cls = "team eliminated" if (winner == "home" or away is None) else "team"
+    if winner == "home":
+        home_cls = "team winner"
+    elif winner == "away":
+        away_cls = "team winner"
     hs = "" if home_score is None else home_score
     as_ = "" if away_score is None else away_score
     home = home or "TBD"
@@ -148,6 +154,7 @@ def render_bracket():
         ".team{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:0.9rem;color:#f0f6fc;}"
         ".match .team:first-child{border-bottom:1px solid #30363d;}"
         ".team.eliminated{color:#6e7681;opacity:0.6;}"
+        ".team.winner{border-left:3px solid #58a6ff;color:#f0f6fc;font-weight:600;}"
         ".tla{font-weight:600;letter-spacing:0.03em;}"
         ".match-note{font-size:0.7rem;font-weight:400;color:#8b949e;letter-spacing:0;margin-left:5px;}"
         ".score{color:#8b949e;}"
