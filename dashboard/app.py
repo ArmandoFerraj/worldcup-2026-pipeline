@@ -42,6 +42,7 @@ def render_golden_boot():
         markers=True,
         labels={"snapshot_date": "Date", "goals": "Goals", "player_name": "Player"},
         color_discrete_sequence=CHART_COLORS,
+        category_orders={"player_name": list(top_players)},
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Player", height=500)
@@ -79,6 +80,7 @@ def render_assists():
         markers=True,
         labels={"snapshot_date": "Date", "assists": "Assists", "player_name": "Player"},
         color_discrete_sequence=CHART_COLORS,
+        category_orders={"player_name": list(top_players)},
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Player", height=500)
@@ -117,6 +119,10 @@ def render_position_race(group_df):
     st.divider()
     st.header("Position Race")
 
+    # Legend order: current standings (latest snapshot), best position first.
+    latest = group_df[group_df["snapshot_date"] == group_df["snapshot_date"].max()]
+    team_order = latest.sort_values("position")["team_name"].tolist()
+
     fig = px.line(
         group_df,
         x="snapshot_date",
@@ -125,6 +131,7 @@ def render_position_race(group_df):
         markers=True,
         labels={"snapshot_date": "Date", "position": "Position", "team_name": "Team"},
         color_discrete_sequence=CHART_COLORS,
+        category_orders={"team_name": team_order},
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_yaxes(autorange="reversed")
@@ -141,6 +148,10 @@ def render_goals_for(group_df):
     st.divider()
     st.header("Goals For")
 
+    # Legend order: current standings (latest snapshot), most goals first.
+    latest = group_df[group_df["snapshot_date"] == group_df["snapshot_date"].max()]
+    team_order = latest.sort_values("goals_for", ascending=False)["team_name"].tolist()
+
     fig = px.line(
         group_df,
         x="snapshot_date",
@@ -149,6 +160,7 @@ def render_goals_for(group_df):
         markers=True,
         labels={"snapshot_date": "Date", "goals_for": "Goals", "team_name": "Team"},
         color_discrete_sequence=CHART_COLORS,
+        category_orders={"team_name": team_order},
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Team", height=500)
@@ -164,6 +176,10 @@ def render_goal_difference(group_df):
     st.divider()
     st.header("Goal Difference")
 
+    # Legend order: current standings (latest snapshot), best GD first.
+    latest = group_df[group_df["snapshot_date"] == group_df["snapshot_date"].max()]
+    team_order = latest.sort_values("goal_difference", ascending=False)["team_name"].tolist()
+
     fig = px.line(
         group_df,
         x="snapshot_date",
@@ -172,6 +188,7 @@ def render_goal_difference(group_df):
         markers=True,
         labels={"snapshot_date": "Date", "goal_difference": "Goal Difference", "team_name": "Team"},
         color_discrete_sequence=CHART_COLORS,
+        category_orders={"team_name": team_order},
     )
     fig.update_xaxes(tickformat="%m-%d")
     fig.update_layout(legend_title_text="Team", height=500)
