@@ -233,7 +233,7 @@ with st.sidebar:
     st.divider()
 
     st.caption("Data updates daily at 5 AM ET")
-    st.markdown("[View the code on GitHub](https://github.com/ArmandoFerraj)")
+    st.markdown("[View the code on GitHub](https://github.com/ArmandoFerraj/worldcup-2026-pipeline)")
 
 
 st.title("World Cup 2026 Dashboard")
