@@ -98,16 +98,21 @@ def get_top_scoring_team():
     conn = get_connection()
     df = pd.read_sql(
         """
-        WITH latest AS (
-            SELECT fct_standings.team_id, fct_standings.goals_for, dim_teams.team_name
-            FROM fct_standings
-            JOIN dim_teams ON fct_standings.team_id = dim_teams.team_id
-            WHERE fct_standings.snapshot_date = (SELECT MAX(snapshot_date) FROM fct_standings)
+        WITH goals AS (
+            SELECT home_id AS team_id, home_score AS scored FROM fct_matches
+            UNION ALL
+            SELECT away_id AS team_id, away_score AS scored FROM fct_matches
+        ),
+        totals AS (
+            SELECT team_id, SUM(scored) AS goals_for
+            FROM goals
+            GROUP BY team_id
         )
-        SELECT team_name, goals_for
-        FROM latest
-        WHERE goals_for = (SELECT MAX(goals_for) FROM latest)
-        ORDER BY team_name
+        SELECT dim_teams.team_name, totals.goals_for
+        FROM totals
+        JOIN dim_teams ON totals.team_id::text = dim_teams.team_id
+        WHERE totals.goals_for = (SELECT MAX(goals_for) FROM totals)
+        ORDER BY dim_teams.team_name
         """,
         conn,
     )
